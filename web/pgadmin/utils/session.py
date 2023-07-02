@@ -17,6 +17,7 @@ Modified to support both Python 2.6+ & Python 3.x
 
 import base64
 import datetime
+import fcntl
 import hmac
 import hashlib
 import os
@@ -215,9 +216,10 @@ class FileBackedSessionManager(SessionManager):
 
         # touch the file
         with open(fname, 'wb'):
-            return ManagedSession(sid=sid)
-
-        return ManagedSession(sid=sid)
+            fcntl.flock(fname, fcntl.LOCK_EX)
+            s =  ManagedSession(sid=sid)
+            fcntl.flock(fname, fcntl.LOCK_UN)
+            return s
 
     def get(self, sid, digest):
         'Retrieve a managed session by session-id, checking the HMAC digest'
@@ -230,7 +232,9 @@ class FileBackedSessionManager(SessionManager):
         if os.path.exists(fname):
             try:
                 with open(fname, 'rb') as f:
+                    fcntl.flock(fname, fcntl.LOCK_EX)
                     randval, hmac_digest, data = load(f)
+                    fcntl.flock(fname, fcntl.LOCK_UN)
             except Exception:
                 pass
 
@@ -268,10 +272,13 @@ class FileBackedSessionManager(SessionManager):
 
         fname = os.path.join(self.path, session.sid)
         with open(fname, 'wb') as f:
+            fcntl.flock(fname, fcntl.LOCK_EX)
             dump(
                 (session.randval, session.hmac_digest, dict(session)),
                 f
             )
+            fcntl.flock(fname, fcntl.LOCK_UN)
+
 
 
 class ManagedSessionInterface(SessionInterface):
