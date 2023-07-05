@@ -215,10 +215,10 @@ class FileBackedSessionManager(SessionManager):
                 return ManagedSession(sid=sid)
 
         # touch the file
-        with open(fname, 'wb'):
-            fcntl.flock(fname, fcntl.LOCK_EX)
+        with open(fname, 'wb') as file:
+            fcntl.flock(file, fcntl.LOCK_EX)
             s =  ManagedSession(sid=sid)
-            fcntl.flock(fname, fcntl.LOCK_UN)
+            fcntl.flock(file, fcntl.LOCK_UN)
             return s
 
     def get(self, sid, digest):
@@ -232,9 +232,9 @@ class FileBackedSessionManager(SessionManager):
         if os.path.exists(fname):
             try:
                 with open(fname, 'rb') as f:
-                    fcntl.flock(fname, fcntl.LOCK_EX)
+                    fcntl.flock(f, fcntl.LOCK_EX)
                     randval, hmac_digest, data = load(f)
-                    fcntl.flock(fname, fcntl.LOCK_UN)
+                    fcntl.flock(f, fcntl.LOCK_UN)
             except Exception:
                 pass
 
@@ -272,12 +272,12 @@ class FileBackedSessionManager(SessionManager):
 
         fname = os.path.join(self.path, session.sid)
         with open(fname, 'wb') as f:
-            fcntl.flock(fname, fcntl.LOCK_EX)
+            fcntl.flock(f, fcntl.LOCK_EX)
             dump(
                 (session.randval, session.hmac_digest, dict(session)),
                 f
             )
-            fcntl.flock(fname, fcntl.LOCK_UN)
+            fcntl.flock(f, fcntl.LOCK_UN)
 
 
 
